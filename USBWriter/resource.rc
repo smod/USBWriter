@@ -1,0 +1,33 @@
+/*
+ * ----------------------------------------------------------------------------
+ * "THE BEER-WARE LICENSE" (Revision 42):
+ * <etienne.doms@gmail.com> wrote this file. As long as you retain this notice
+ * you can do whatever you want with this stuff. If we meet some day, and you
+ * think this stuff is worth it, you can buy me a beer in return. Etienne Doms
+ * ----------------------------------------------------------------------------
+ */
+
+#include "resource.h"
+
+#include <windows.h>
+#include <commctrl.h>
+
+CREATEPROCESS_MANIFEST_RESOURCE_ID RT_MANIFEST "manifest.xml"
+
+IDI_APP_ICON ICON "icon.ico"
+
+IDC_MAINDLG DIALOGEX 0, 0, 200, 60
+STYLE DS_CENTER | WS_SYSMENU
+FONT 10, "MS Shell Dlg"
+CAPTION "USBWriter"
+BEGIN
+    LTEXT "Source", IDC_STATIC, 10, 10, 30, 10
+    EDITTEXT IDC_MAINDLG_SOURCE, 50, 10, 100, 10, ES_AUTOHSCROLL
+    PUSHBUTTON "Browse", IDC_MAINDLG_SELECT, 160, 9, 30, 12
+    LTEXT "Target", IDC_STATIC, 10, 25, 30, 10
+    COMBOBOX IDC_MAINDLG_TARGET_LIST, 50, 24, 100, 80, CBS_DROPDOWNLIST
+    PUSHBUTTON "Refresh", IDC_MAINDLG_REFRESH, 160, 24, 30, 12
+    LTEXT "Progress", IDC_STATIC, 10, 40, 30, 10
+    CONTROL "", IDC_MAINDLG_PROGRESSBAR, PROGRESS_CLASS, PBS_SMOOTH, 50, 40, 100, 10
+    PUSHBUTTON "Write", IDC_MAINDLG_WRITE, 160, 39, 30, 12
+END
