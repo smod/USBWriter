@@ -5,11 +5,14 @@
  * you can do whatever you want with this stuff. If we meet some day, and you
  * think this stuff is worth it, you can buy me a beer in return. Etienne Doms
  * ----------------------------------------------------------------------------
+ * 2013/05/16 <pierrevr@mindgoo.be> - Changed buffer size to reduce I/O operations
  */
 
 #include "MainDlgWrite.h"
 #include "resource.h"
 #include <commctrl.h>
+
+#define BUFFER_SIZE 32 * 1024 * 1024
 
 static DWORD WINAPI ThreadRoutine(LPVOID lpParam) {
     HWND hwndDlg = (HWND) lpParam;
@@ -48,21 +51,21 @@ static DWORD WINAPI ThreadRoutine(LPVOID lpParam) {
                         LARGE_INTEGER fileSize;
                         DWORD totalNumberOfBytesWritten = 0;
                         DWORD pbmPos = 0;
+                        LPVOID lpBuffer = HeapAlloc(GetProcessHeap(), 0, BUFFER_SIZE);
 
                         GetFileSizeEx(hSourceFile, &fileSize);
 
                         while (TRUE) {
-                            CHAR buffer[8192];
                             DWORD numberOfBytesRead;
 
-                            if (ReadFile(hSourceFile, buffer, ARRAYSIZE(buffer), &numberOfBytesRead, NULL)) {
+                            if (ReadFile(hSourceFile, lpBuffer, BUFFER_SIZE, &numberOfBytesRead, NULL)) {
                                 if (numberOfBytesRead == 0) {
                                     MessageBox(hwndDlg, TEXT("Source file successfully written to target device."), TEXT("Success"), MB_ICONINFORMATION);
                                     break;
                                 } else {
                                     DWORD numberOfBytesWritten;
 
-                                    if (WriteFile(hTargetDevice, buffer, numberOfBytesRead, &numberOfBytesWritten, NULL)) {
+                                    if (WriteFile(hTargetDevice, lpBuffer, numberOfBytesRead, &numberOfBytesWritten, NULL)) {
                                         DWORD nextPbmPos;
 
                                         totalNumberOfBytesWritten += numberOfBytesWritten;
@@ -81,8 +84,9 @@ static DWORD WINAPI ThreadRoutine(LPVOID lpParam) {
                                 MessageBox(hwndDlg, TEXT("An error occurred while reading the source file."), TEXT("Error"), MB_ICONERROR);
                                 break;
                             }
-                        } 
+                        }
 
+                        HeapFree(GetProcessHeap(), 0, lpBuffer);
                         CloseHandle(hTargetDevice);
                     } else {
                         MessageBox(hwndDlg, TEXT("An error occurred while opening the target device."), TEXT("Error"), MB_ICONERROR);
