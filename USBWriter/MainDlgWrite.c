@@ -51,11 +51,11 @@ static DWORD WINAPI ThreadRoutine(LPVOID lpParam) {
                         LARGE_INTEGER fileSize;
                         DWORD totalNumberOfBytesWritten = 0;
                         DWORD pbmPos = 0;
-                        LPVOID lpBuffer = HeapAlloc(GetProcessHeap(), 0, BUFFER_SIZE);
 
                         GetFileSizeEx(hSourceFile, &fileSize);
 
                         while (TRUE) {
+                            static CHAR lpBuffer[BUFFER_SIZE];
                             DWORD numberOfBytesRead;
 
                             if (ReadFile(hSourceFile, lpBuffer, BUFFER_SIZE, &numberOfBytesRead, NULL)) {
@@ -86,7 +86,6 @@ static DWORD WINAPI ThreadRoutine(LPVOID lpParam) {
                             }
                         }
 
-                        HeapFree(GetProcessHeap(), 0, lpBuffer);
                         CloseHandle(hTargetDevice);
                     } else {
                         MessageBox(hwndDlg, TEXT("An error occurred while opening the target device."), TEXT("Error"), MB_ICONERROR);
