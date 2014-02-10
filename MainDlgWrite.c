@@ -6,11 +6,13 @@
  * think this stuff is worth it, you can buy me a beer in return. Etienne Doms
  * ----------------------------------------------------------------------------
  * 2013/05/16 <pierrevr@mindgoo.be> - Changed buffer size to reduce I/O operations
+ * 2014/02/08 <mail@michael-kaufmann.ch> - Calculate the progress correctly for files > 4 GB
  */
 
 #include "MainDlgWrite.h"
 #include "resource.h"
 #include <commctrl.h>
+#include <winioctl.h>
 
 #define BUFFER_SIZE 32 * 1024 * 1024
 
@@ -19,15 +21,15 @@ static DWORD WINAPI ThreadRoutine(LPVOID lpParam) {
     TCHAR szFilePathName[MAX_PATH];
     HANDLE hSourceFile;
 
-    GetDlgItemText(hwndDlg, IDC_MAINDLG_SOURCE, szFilePathName, ARRAYSIZE(szFilePathName));
+    GetDlgItemText(hwndDlg, IDC_MAINDLG_SOURCE, szFilePathName, sizeof(szFilePathName) / sizeof(szFilePathName[0]));
     hSourceFile = CreateFile(szFilePathName, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 
     if (hSourceFile != INVALID_HANDLE_VALUE) {
         LRESULT index = SendDlgItemMessage(hwndDlg, IDC_MAINDLG_TARGET_LIST, CB_GETCURSEL, 0, 0);
 
         if (index != CB_ERR) {
-            TCHAR szLbText[sizeof "X:"];
-            TCHAR szVolumePathName[sizeof "\\\\.\\X:"];
+            TCHAR szLbText[sizeof "A:"];
+            TCHAR szVolumePathName[sizeof "\\\\.\\A:"];
             HANDLE hTargetVolume;
 
             SendDlgItemMessage(hwndDlg, IDC_MAINDLG_TARGET_LIST, CB_GETLBTEXT, index, (LPARAM) szLbText);
@@ -49,9 +51,10 @@ static DWORD WINAPI ThreadRoutine(LPVOID lpParam) {
 
                     if (hTargetDevice != INVALID_HANDLE_VALUE) {
                         LARGE_INTEGER fileSize;
-                        DWORD totalNumberOfBytesWritten = 0;
+                        LARGE_INTEGER totalNumberOfBytesWritten;
                         DWORD pbmPos = 0;
 
+                        totalNumberOfBytesWritten.QuadPart = 0;
                         GetFileSizeEx(hSourceFile, &fileSize);
 
                         while (TRUE) {
@@ -68,8 +71,8 @@ static DWORD WINAPI ThreadRoutine(LPVOID lpParam) {
                                     if (WriteFile(hTargetDevice, lpBuffer, numberOfBytesRead, &numberOfBytesWritten, NULL)) {
                                         DWORD nextPbmPos;
 
-                                        totalNumberOfBytesWritten += numberOfBytesWritten;
-                                        nextPbmPos = (DWORD) (100.f * totalNumberOfBytesWritten / fileSize.QuadPart);
+                                        totalNumberOfBytesWritten.QuadPart += numberOfBytesWritten;
+                                        nextPbmPos = (DWORD) (100.f * totalNumberOfBytesWritten.QuadPart / fileSize.QuadPart);
 
                                         if (pbmPos < nextPbmPos) {
                                             SendDlgItemMessage(hwndDlg, IDC_MAINDLG_PROGRESSBAR, PBM_SETPOS, nextPbmPos, 0);
@@ -118,7 +121,7 @@ static DWORD WINAPI ThreadRoutine(LPVOID lpParam) {
 }
 
 INT_PTR MainDlgWriteClick(HWND hwndDlg) {
-    if (MessageBox(hwndDlg, TEXT("All data on the target device will be lost. Confirm?"), TEXT("Warning"), MB_YESNO | MB_ICONINFORMATION) == IDYES) {
+    if (MessageBox(hwndDlg, TEXT("All data on the target device will be lost. Confirm?"), TEXT("Warning"), MB_YESNO | MB_ICONEXCLAMATION) == IDYES) {
         EnableWindow(GetDlgItem(hwndDlg, IDC_MAINDLG_SOURCE), FALSE);
         EnableWindow(GetDlgItem(hwndDlg, IDC_MAINDLG_SELECT), FALSE);
         EnableWindow(GetDlgItem(hwndDlg, IDC_MAINDLG_TARGET_LIST), FALSE);

@@ -5,6 +5,7 @@
  * you can do whatever you want with this stuff. If we meet some day, and you
  * think this stuff is worth it, you can buy me a beer in return. Etienne Doms
  * ----------------------------------------------------------------------------
+ * 2014/02/08 <mail@michael-kaufmann.ch> - Don't show the "Open as read-only" checkbox
  */
 
 #include "MainDlgSelect.h"
@@ -21,7 +22,7 @@ INT_PTR MainDlgSelectClick(HWND hwndDlg) {
     ofn.hwndOwner = hwndDlg;
     ofn.lpstrFile = lpstrFile;
     ofn.nMaxFile = MAX_PATH;
-    ofn.Flags = OFN_FILEMUSTEXIST;
+    ofn.Flags = OFN_FILEMUSTEXIST | OFN_HIDEREADONLY;
 
     if (GetOpenFileName(&ofn)) {
         SetDlgItemText(hwndDlg, IDC_MAINDLG_SOURCE, ofn.lpstrFile);

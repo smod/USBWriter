@@ -1,0 +1,33 @@
+/*
+ * ----------------------------------------------------------------------------
+ * "THE BEER-WARE LICENSE" (Revision 42):
+ * <etienne.doms@gmail.com> wrote this file. As long as you retain this notice
+ * you can do whatever you want with this stuff. If we meet some day, and you
+ * think this stuff is worth it, you can buy me a beer in return. Etienne Doms
+ * ----------------------------------------------------------------------------
+ * 2014/02/08 <mail@michael-kaufmann.ch> - Better alignment of the controls, use the default font size, better keyboard support
+ */
+
+#include "resource.h"
+#include <windows.h>
+#include <commctrl.h>
+
+CREATEPROCESS_MANIFEST_RESOURCE_ID RT_MANIFEST "manifest.xml"
+
+IDI_APP_ICON ICON "icon.ico"
+
+IDC_MAINDLG DIALOGEX 0, 0, 266, 62
+STYLE DS_CENTER | DS_SHELLFONT | WS_SYSMENU
+FONT 8, "MS Shell Dlg"
+CAPTION "USBWriter"
+BEGIN
+    PUSHBUTTON "&Browse", IDC_MAINDLG_SELECT, 207, 6, 50, 14
+    LTEXT "&Target", IDC_STATIC, 7, 25, 35, 12, SS_CENTERIMAGE
+    COMBOBOX IDC_MAINDLG_TARGET_LIST, 47, 25, 150, 80, CBS_DROPDOWNLIST | WS_TABSTOP
+    PUSHBUTTON "&Refresh", IDC_MAINDLG_REFRESH, 207, 24, 50, 14
+    LTEXT "Progress", IDC_STATIC, 7, 43, 35, 12, SS_CENTERIMAGE
+    CONTROL "", IDC_MAINDLG_PROGRESSBAR, PROGRESS_CLASS, PBS_SMOOTH, 47, 43, 150, 12
+    PUSHBUTTON "&Write", IDC_MAINDLG_WRITE, 207, 42, 50, 14
+    LTEXT "&Source", IDC_STATIC, 7, 7, 35, 12, SS_CENTERIMAGE
+    EDITTEXT IDC_MAINDLG_SOURCE, 47, 7, 150, 12, ES_AUTOHSCROLL
+END

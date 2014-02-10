@@ -16,12 +16,12 @@ INT_PTR MainDlgRefreshClick(HWND hwndDlg) {
     SendDlgItemMessage(hwndDlg, IDC_MAINDLG_TARGET_LIST, CB_RESETCONTENT, 0, 0);
 
     for (driveLetter = TEXT('A'); driveLetter <= TEXT('Z'); ++driveLetter) {
-        TCHAR szRootPathName[sizeof "\\\\.\\X:\\"];
+        TCHAR szRootPathName[sizeof "\\\\.\\A:\\"];
 
         wsprintf(szRootPathName, TEXT("\\\\.\\%c:\\"), driveLetter);
 
         if (GetDriveType(szRootPathName) == DRIVE_REMOVABLE) {
-            TCHAR szLbText[sizeof "X:"];
+            TCHAR szLbText[sizeof "A:"];
 
             wsprintf(szLbText, TEXT("%c:"), driveLetter);
             SendDlgItemMessage(hwndDlg, IDC_MAINDLG_TARGET_LIST, CB_ADDSTRING, 0, (LPARAM) szLbText);
