@@ -21,5 +21,6 @@
 #define IDC_MAINDLG_REFRESH     105
 #define IDC_MAINDLG_PROGRESSBAR 106
 #define IDC_MAINDLG_WRITE       107
+#define IDC_MAINDLG_CLOSE       108
 
 #endif

@@ -6,6 +6,7 @@
  * think this stuff is worth it, you can buy me a beer in return. Etienne Doms
  * ----------------------------------------------------------------------------
  * 2014/02/08 <mail@michael-kaufmann.ch> - Don't show the "Open as read-only" checkbox
+ * 2014/11/22 <mail@michael-kaufmann.ch> - File browsing: Provide the file filters "Disk image files" and "All files"
  */
 
 #include "MainDlgSelect.h"
@@ -20,6 +21,7 @@ INT_PTR MainDlgSelectClick(HWND hwndDlg) {
 
     ofn.lStructSize = sizeof ofn;
     ofn.hwndOwner = hwndDlg;
+    ofn.lpstrFilter = TEXT("Disk image files (*.img; *.iso)\0*.IMG;*.ISO\0All files (*.*)\0*.*\0\0");
     ofn.lpstrFile = lpstrFile;
     ofn.nMaxFile = MAX_PATH;
     ofn.Flags = OFN_FILEMUSTEXIST | OFN_HIDEREADONLY;

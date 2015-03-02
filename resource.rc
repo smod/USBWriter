@@ -6,6 +6,7 @@
  * think this stuff is worth it, you can buy me a beer in return. Etienne Doms
  * ----------------------------------------------------------------------------
  * 2014/02/08 <mail@michael-kaufmann.ch> - Better alignment of the controls, use the default font size, better keyboard support
+ * 2014/11/22 <mail@michael-kaufmann.ch> - Group the controls, add a "Close" button
  */
 
 #include "resource.h"
@@ -16,18 +17,19 @@ CREATEPROCESS_MANIFEST_RESOURCE_ID RT_MANIFEST "manifest.xml"
 
 IDI_APP_ICON ICON "icon.ico"
 
-IDC_MAINDLG DIALOGEX 0, 0, 266, 62
+IDC_MAINDLG DIALOGEX 0, 0, 297, 161
 STYLE DS_CENTER | DS_SHELLFONT | WS_SYSMENU
 FONT 8, "MS Shell Dlg"
 CAPTION "USBWriter"
 BEGIN
-    PUSHBUTTON "&Browse", IDC_MAINDLG_SELECT, 207, 6, 50, 14
-    LTEXT "&Target", IDC_STATIC, 7, 25, 35, 12, SS_CENTERIMAGE
-    COMBOBOX IDC_MAINDLG_TARGET_LIST, 47, 25, 150, 80, CBS_DROPDOWNLIST | WS_TABSTOP
-    PUSHBUTTON "&Refresh", IDC_MAINDLG_REFRESH, 207, 24, 50, 14
-    LTEXT "Progress", IDC_STATIC, 7, 43, 35, 12, SS_CENTERIMAGE
-    CONTROL "", IDC_MAINDLG_PROGRESSBAR, PROGRESS_CLASS, PBS_SMOOTH, 47, 43, 150, 12
-    PUSHBUTTON "&Write", IDC_MAINDLG_WRITE, 207, 42, 50, 14
-    LTEXT "&Source", IDC_STATIC, 7, 7, 35, 12, SS_CENTERIMAGE
-    EDITTEXT IDC_MAINDLG_SOURCE, 47, 7, 150, 12, ES_AUTOHSCROLL
+    PUSHBUTTON "&Browse...", IDC_MAINDLG_SELECT, 231, 18, 50, 14
+    GROUPBOX "&Target device", IDC_STATIC, 5, 50, 285, 35
+    COMBOBOX IDC_MAINDLG_TARGET_LIST, 14, 64, 208, 71, CBS_DROPDOWNLIST | WS_TABSTOP
+    PUSHBUTTON "&Refresh", IDC_MAINDLG_REFRESH, 231, 63, 50, 14
+    GROUPBOX "Progress", IDC_STATIC, 5, 95, 285, 35
+    CONTROL "", IDC_MAINDLG_PROGRESSBAR, "msctls_progress32", PBS_SMOOTH, 14, 109, 267, 12
+    PUSHBUTTON "&Write", IDC_MAINDLG_WRITE, 160, 140, 60, 14
+    PUSHBUTTON "&Close", IDC_MAINDLG_CLOSE, 230, 140, 60, 14
+    GROUPBOX "&Source file", IDC_STATIC, 5, 5, 285, 35
+    EDITTEXT IDC_MAINDLG_SOURCE, 14, 19, 208, 12, ES_AUTOHSCROLL
 END

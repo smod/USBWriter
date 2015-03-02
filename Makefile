@@ -1,6 +1,6 @@
-CC = mingw32-gcc
-WINDRES = mingw32-windres
-STRIP = mingw32-strip
+CC = gcc
+WINDRES = windres
+STRIP = strip
 CFLAGS = -Wall -O2 -DNDEBUG -DWINVER=0x0500
 LDFLAGS = -mwindows
 
@@ -19,3 +19,7 @@ $(EXE): $(OBJ)
 
 resource.o: resource.rc
 	$(WINDRES) resource.rc -o resource.o
+
+clean:
+	del $(OBJ)
+	del $(EXE)

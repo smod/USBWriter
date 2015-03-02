@@ -12,6 +12,13 @@
 
 #include <windows.h>
 
+#ifndef DBT_DEVICEARRIVAL
+#define DBT_DEVICEARRIVAL 0x8000
+#endif
+#ifndef DBT_DEVICEREMOVECOMPLETE
+#define DBT_DEVICEREMOVECOMPLETE 0x8004
+#endif
+
 INT_PTR MainDlg(HINSTANCE hInstance);
 
 #endif

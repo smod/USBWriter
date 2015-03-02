@@ -7,6 +7,7 @@
  * ----------------------------------------------------------------------------
  * 2013/05/16 <pierrevr@mindgoo.be> - Changed buffer size to reduce I/O operations
  * 2014/02/08 <mail@michael-kaufmann.ch> - Calculate the progress correctly for files > 4 GB
+ * 2015/02/16 <mail@michael-kaufmann.ch> -  Check that the target device is removeable before writing to it
  */
 
 #include "MainDlgWrite.h"
@@ -14,7 +15,7 @@
 #include <commctrl.h>
 #include <winioctl.h>
 
-#define BUFFER_SIZE 32 * 1024 * 1024
+#define BUFFER_SIZE (32 * 1024 * 1024)
 
 static DWORD WINAPI ThreadRoutine(LPVOID lpParam) {
     HWND hwndDlg = (HWND) lpParam;
@@ -28,79 +29,86 @@ static DWORD WINAPI ThreadRoutine(LPVOID lpParam) {
         LRESULT index = SendDlgItemMessage(hwndDlg, IDC_MAINDLG_TARGET_LIST, CB_GETCURSEL, 0, 0);
 
         if (index != CB_ERR) {
-            TCHAR szLbText[sizeof "A:"];
+            TCHAR driveLetter;
+            TCHAR szRootPathName[sizeof "\\\\.\\A:\\"];
             TCHAR szVolumePathName[sizeof "\\\\.\\A:"];
-            HANDLE hTargetVolume;
 
-            SendDlgItemMessage(hwndDlg, IDC_MAINDLG_TARGET_LIST, CB_GETLBTEXT, index, (LPARAM) szLbText);
-            wsprintf(szVolumePathName, TEXT("\\\\.\\%c:"), szLbText[0]);
-            hTargetVolume = CreateFile(szVolumePathName, GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
+            driveLetter = (TCHAR) SendDlgItemMessage(hwndDlg, IDC_MAINDLG_TARGET_LIST, CB_GETITEMDATA, index, 0);
 
-            if (hTargetVolume != INVALID_HANDLE_VALUE) {
-                DWORD bytesReturned;
+            wsprintf(szRootPathName, TEXT("\\\\.\\%c:\\"), driveLetter);
+            wsprintf(szVolumePathName, TEXT("\\\\.\\%c:"), driveLetter);
 
-                if (DeviceIoControl(hTargetVolume, FSCTL_LOCK_VOLUME, NULL, 0, NULL, 0, &bytesReturned, NULL)) {
-                    VOLUME_DISK_EXTENTS volumeDiskExtents;
-                    TCHAR szDevicePathName[sizeof "\\\\.\\PhysicalDrive99"];
-                    HANDLE hTargetDevice;
+            if (GetDriveType(szRootPathName) == DRIVE_REMOVABLE) {
+                HANDLE hTargetVolume = CreateFile(szVolumePathName, GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
 
-                    DeviceIoControl(hTargetVolume, FSCTL_DISMOUNT_VOLUME, NULL, 0, NULL, 0, &bytesReturned, NULL);
-                    DeviceIoControl(hTargetVolume, IOCTL_VOLUME_GET_VOLUME_DISK_EXTENTS, NULL, 0, &volumeDiskExtents, sizeof volumeDiskExtents, &bytesReturned, NULL);
-                    wsprintf(szDevicePathName, TEXT("\\\\.\\PhysicalDrive%d"), volumeDiskExtents.Extents[0].DiskNumber);
-                    hTargetDevice = CreateFile(szDevicePathName, GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
+                if (hTargetVolume != INVALID_HANDLE_VALUE) {
+                    DWORD bytesReturned;
 
-                    if (hTargetDevice != INVALID_HANDLE_VALUE) {
-                        LARGE_INTEGER fileSize;
-                        LARGE_INTEGER totalNumberOfBytesWritten;
-                        DWORD pbmPos = 0;
+                    if (DeviceIoControl(hTargetVolume, FSCTL_LOCK_VOLUME, NULL, 0, NULL, 0, &bytesReturned, NULL)) {
+                        VOLUME_DISK_EXTENTS volumeDiskExtents;
+                        TCHAR szDevicePathName[sizeof "\\\\.\\PhysicalDrive9999999999"];
+                        HANDLE hTargetDevice;
 
-                        totalNumberOfBytesWritten.QuadPart = 0;
-                        GetFileSizeEx(hSourceFile, &fileSize);
+                        DeviceIoControl(hTargetVolume, FSCTL_DISMOUNT_VOLUME, NULL, 0, NULL, 0, &bytesReturned, NULL);
+                        DeviceIoControl(hTargetVolume, IOCTL_VOLUME_GET_VOLUME_DISK_EXTENTS, NULL, 0, &volumeDiskExtents, sizeof volumeDiskExtents, &bytesReturned, NULL);
+                        wsprintf(szDevicePathName, TEXT("\\\\.\\PhysicalDrive%lu"), (unsigned long)volumeDiskExtents.Extents[0].DiskNumber);
+                        hTargetDevice = CreateFile(szDevicePathName, GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, 0, NULL);
 
-                        while (TRUE) {
-                            static CHAR lpBuffer[BUFFER_SIZE];
-                            DWORD numberOfBytesRead;
+                        if (hTargetDevice != INVALID_HANDLE_VALUE) {
+                            LARGE_INTEGER fileSize;
+                            LARGE_INTEGER totalNumberOfBytesWritten;
+                            DWORD pbmPos = 0;
 
-                            if (ReadFile(hSourceFile, lpBuffer, BUFFER_SIZE, &numberOfBytesRead, NULL)) {
-                                if (numberOfBytesRead == 0) {
-                                    MessageBox(hwndDlg, TEXT("Source file successfully written to target device."), TEXT("Success"), MB_ICONINFORMATION);
-                                    break;
-                                } else {
-                                    DWORD numberOfBytesWritten;
+                            totalNumberOfBytesWritten.QuadPart = 0;
+                            GetFileSizeEx(hSourceFile, &fileSize);
 
-                                    if (WriteFile(hTargetDevice, lpBuffer, numberOfBytesRead, &numberOfBytesWritten, NULL)) {
-                                        DWORD nextPbmPos;
+                            for(;;) {
+                                static CHAR lpBuffer[BUFFER_SIZE];
+                                DWORD numberOfBytesRead;
 
-                                        totalNumberOfBytesWritten.QuadPart += numberOfBytesWritten;
-                                        nextPbmPos = (DWORD) (100.f * totalNumberOfBytesWritten.QuadPart / fileSize.QuadPart);
-
-                                        if (pbmPos < nextPbmPos) {
-                                            SendDlgItemMessage(hwndDlg, IDC_MAINDLG_PROGRESSBAR, PBM_SETPOS, nextPbmPos, 0);
-                                            pbmPos = nextPbmPos;
-                                        }
-                                    } else {
-                                        MessageBox(hwndDlg, TEXT("An error occurred while writing to the target device."), TEXT("Error"), MB_ICONERROR);
+                                if (ReadFile(hSourceFile, lpBuffer, BUFFER_SIZE, &numberOfBytesRead, NULL)) {
+                                    if (numberOfBytesRead == 0) {
+                                        MessageBox(hwndDlg, TEXT("Source file successfully written to target device."), TEXT("Success"), MB_ICONINFORMATION);
                                         break;
-                                    }
-                                }
-                            } else {
-                                MessageBox(hwndDlg, TEXT("An error occurred while reading the source file."), TEXT("Error"), MB_ICONERROR);
-                                break;
-                            }
-                        }
+                                    } else {
+                                        DWORD numberOfBytesWritten;
 
-                        CloseHandle(hTargetDevice);
+                                        if (WriteFile(hTargetDevice, lpBuffer, numberOfBytesRead, &numberOfBytesWritten, NULL)) {
+                                            DWORD nextPbmPos;
+
+                                            totalNumberOfBytesWritten.QuadPart += numberOfBytesWritten;
+                                            nextPbmPos = (DWORD) (100.f * totalNumberOfBytesWritten.QuadPart / fileSize.QuadPart);
+
+                                            if (pbmPos < nextPbmPos) {
+                                                SendDlgItemMessage(hwndDlg, IDC_MAINDLG_PROGRESSBAR, PBM_SETPOS, nextPbmPos, 0);
+                                                pbmPos = nextPbmPos;
+                                            }
+                                        } else {
+                                            MessageBox(hwndDlg, TEXT("An error occurred while writing to the target device."), TEXT("Error"), MB_ICONERROR);
+                                            break;
+                                        }
+                                    }
+                                } else {
+                                    MessageBox(hwndDlg, TEXT("An error occurred while reading the source file."), TEXT("Error"), MB_ICONERROR);
+                                    break;
+                                }
+                            }
+
+                            CloseHandle(hTargetDevice);
+                        } else {
+                            MessageBox(hwndDlg, TEXT("An error occurred while opening the target device."), TEXT("Error"), MB_ICONERROR);
+                        }
                     } else {
-                        MessageBox(hwndDlg, TEXT("An error occurred while opening the target device."), TEXT("Error"), MB_ICONERROR);
+                        MessageBox(hwndDlg, TEXT("An error occurred while locking the target volume."), TEXT("Error"), MB_ICONERROR); 
                     }
                 } else {
-                    MessageBox(hwndDlg, TEXT("An error occurred while locking the target volume."), TEXT("Error"), MB_ICONERROR); 
+                    MessageBox(hwndDlg, TEXT("An error occurred while opening the target volume."), TEXT("Error"), MB_ICONERROR);
                 }
-            } else {
-                MessageBox(hwndDlg, TEXT("An error occurred while opening the target volume."), TEXT("Error"), MB_ICONERROR);
-            }
 
-            CloseHandle(hTargetVolume);
+                CloseHandle(hTargetVolume);
+            } else {
+                MessageBox(hwndDlg, TEXT("The target is invalid. Please refresh the list of target devices."), TEXT("Error"), MB_ICONEXCLAMATION);
+            }
         } else {
             MessageBox(hwndDlg, TEXT("Please select a target."), TEXT("Error"), MB_ICONEXCLAMATION);
         }
@@ -116,6 +124,7 @@ static DWORD WINAPI ThreadRoutine(LPVOID lpParam) {
     EnableWindow(GetDlgItem(hwndDlg, IDC_MAINDLG_REFRESH), TRUE);
     SendDlgItemMessage(hwndDlg, IDC_MAINDLG_PROGRESSBAR, PBM_SETPOS, 0, 0);
     EnableWindow(GetDlgItem(hwndDlg, IDC_MAINDLG_WRITE), TRUE);
+    EnableWindow(GetDlgItem(hwndDlg, IDC_MAINDLG_CLOSE), TRUE);
     
     return 0;
 }
@@ -128,6 +137,7 @@ INT_PTR MainDlgWriteClick(HWND hwndDlg) {
         EnableWindow(GetDlgItem(hwndDlg, IDC_MAINDLG_REFRESH), FALSE);
         SendDlgItemMessage(hwndDlg, IDC_MAINDLG_PROGRESSBAR, PBM_SETPOS, 0, 0);
         EnableWindow(GetDlgItem(hwndDlg, IDC_MAINDLG_WRITE), FALSE);
+        EnableWindow(GetDlgItem(hwndDlg, IDC_MAINDLG_CLOSE), FALSE);
         CloseHandle(CreateThread(NULL, 0, ThreadRoutine, hwndDlg, 0, NULL));    
     }
 

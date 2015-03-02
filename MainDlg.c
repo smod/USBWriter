@@ -5,6 +5,7 @@
  * you can do whatever you want with this stuff. If we meet some day, and you
  * think this stuff is worth it, you can buy me a beer in return. Etienne Doms
  * ----------------------------------------------------------------------------
+ * 2014/11/22 <mail@michael-kaufmann.ch> - Refresh the list of target devices automatically when a device is added or removed
  */
 
 #include "MainDlg.h"
@@ -53,9 +54,19 @@ static INT_PTR CALLBACK MainDlgProc(HWND hwndDlg, UINT uMsg, WPARAM wParam, LPAR
                 return FALSE;
             }
 
+        case IDC_MAINDLG_CLOSE:
+            SendMessage(hwndDlg, WM_CLOSE, 0, 0);
+            return TRUE;
+
         default:
             return FALSE;
         }
+
+    case WM_DEVICECHANGE:
+        if (DBT_DEVICEARRIVAL == wParam || DBT_DEVICEREMOVECOMPLETE == wParam) {
+            MainDlgRefreshClick(hwndDlg);
+        }
+        return TRUE;
 
     default:
         return FALSE;
